@@ -64,7 +64,7 @@ self.addEventListener('fetch', (event) => {
 
                 return fetch(fetchRequest).then((response) => {
                     // Check if valid response
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                    if (!response || !response.ok) {
                         return response;
                     }
 
