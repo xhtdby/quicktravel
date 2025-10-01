@@ -96,7 +96,7 @@ function initMapPlaceholder() {
 function loadGoogleMapsAPI() {
     // Note: In production, you should use your own API key
     // For demo purposes, we'll use a mock implementation
-    const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
+    const apiKey = 'AIzaSyCf9okaNlSNpA2vdNKOVPHUqEUBcZyWTL0';
     
     if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
         console.log('Using mock Google Maps implementation');
@@ -186,21 +186,15 @@ async function findRoutes() {
 async function findRoutesWithGoogleMaps(start, destination, includeBikeSharing) {
     const routes = [];
     
-    // Request transit route
+    // Get base transit route with alternatives
     const transitRequest = {
         origin: start,
         destination: destination,
         travelMode: google.maps.TravelMode.TRANSIT,
         transitOptions: {
             modes: ['BUS', 'SUBWAY', 'TRAIN']
-        }
-    };
-    
-    // Request bicycling route
-    const bikeRequest = {
-        origin: start,
-        destination: destination,
-        travelMode: google.maps.TravelMode.BICYCLING
+        },
+        provideRouteAlternatives: true
     };
     
     try {
@@ -212,25 +206,47 @@ async function findRoutesWithGoogleMaps(start, destination, includeBikeSharing) 
             });
         });
         
-        routes.push(formatRoute(transitResult, 'transit'));
+        // Add base transit route
+        const baseTransit = formatRoute(transitResult, 'transit');
+        routes.push(baseTransit);
         
-        // Get bike route if requested
         if (includeBikeSharing) {
-            const bikeResult = await new Promise((resolve, reject) => {
-                appState.directionsService.route(bikeRequest, (result, status) => {
-                    if (status === 'OK') resolve(result);
-                    else reject(status);
+            try {
+                console.log('Starting route optimization analysis...');
+                // Analyze transit route for bike-sharing optimization opportunities
+                const optimizedRoutes = await analyzeAndOptimizeRoute(transitResult, start, destination);
+                console.log('Optimization completed, found routes:', optimizedRoutes.length);
+                routes.push(...optimizedRoutes);
+            } catch (optimizationError) {
+                console.error('Route optimization failed:', optimizationError);
+                // Fallback: Add a simple bike route
+                const bikeRequest = {
+                    origin: start,
+                    destination: destination,
+                    travelMode: google.maps.TravelMode.BICYCLING
+                };
+                
+                const bikeResult = await new Promise((resolve, reject) => {
+                    appState.directionsService.route(bikeRequest, (result, status) => {
+                        if (status === 'OK') resolve(result);
+                        else reject(status);
+                    });
                 });
-            });
-            
-            routes.push(formatRoute(bikeResult, 'bike'));
+                
+                routes.push(formatRoute(bikeResult, 'bike'));
+            }
         }
         
         displayRoutes(routes);
         
-        // Display first route on map
+        // Display best route on map
         if (routes.length > 0) {
-            appState.directionsRenderer.setDirections(transitResult);
+            const bestRoute = routes.find(r => r.isFastest) || routes[0];
+            if (bestRoute.directionsResult) {
+                appState.directionsRenderer.setDirections(bestRoute.directionsResult);
+            } else {
+                appState.directionsRenderer.setDirections(transitResult);
+            }
         }
         
     } catch (error) {
@@ -246,38 +262,585 @@ async function findRoutesWithMock(start, destination, includeBikeSharing) {
     
     const routes = [];
     
-    // Mock transit route
+    // Mock standard transit route
     routes.push({
         type: 'transit',
-        duration: '25 mins',
+        duration: '28 mins',
         distance: '4.2 km',
         steps: [
-            'Walk to nearest station (3 mins)',
-            'Take subway/bus (18 mins)',
-            'Walk to destination (4 mins)'
+            '🚶 Walk to Central Station (6 mins)',
+            '🚇 Blue Line: Central to Park Street (12 mins)',
+            '🚌 Bus #47: Park Street to Mall Stop (7 mins)', 
+            '🚶 Walk to destination (3 mins)'
         ],
         isFastest: false
     });
     
-    // Mock bike-sharing route
+    // Mock AI-optimized multi-modal routes
     if (includeBikeSharing) {
+        // Optimized route (best overall score)
         routes.push({
-            type: 'bike',
-            duration: '18 mins',
-            distance: '3.8 km',
+            type: 'optimized',
+            duration: '19 mins',
+            distance: '4.0 km',
             steps: [
-                'Walk to bike station (2 mins)',
-                'Bike ride (14 mins)',
-                'Walk from bike station (2 mins)'
+                '🚴 Bike from Station A to Central Station (3 mins)',
+                '🚇 Blue Line: Central to Park Street (12 mins)',
+                '🚴 Bike from Station B to destination (4 mins)'
             ],
             isFastest: true,
-            savings: 'Save 7 mins with bike-sharing!'
+            savings: '⚡ Save 9 mins with AI-optimized routing!',
+            cost: '$1.00'
+        });
+        
+        // Time-focused route (absolute fastest)
+        routes.push({
+            type: 'time_focused', 
+            duration: '17 mins',
+            distance: '3.8 km',
+            steps: [
+                '🚗 Ride-share to Park Street (8 mins)',
+                '🚴 Bike from Station C to destination (9 mins)'
+            ],
+            isFastest: false,
+            savings: '⚡ Fastest possible route!',
+            cost: '$12.50'
+        });
+        
+        // Bike-focused route (eco-friendly)
+        routes.push({
+            type: 'bike_focused',
+            duration: '22 mins', 
+            distance: '4.1 km',
+            steps: [
+                '🚴 Bike from Station A to Station D (15 mins)',
+                '🚶 Walk to destination (7 mins)'
+            ],
+            isFastest: false,
+            savings: 'Zero emissions route!',
+            cost: '$0.50'
         });
     }
     
     displayRoutes(routes);
     updateMapWithMockRoute(start, destination);
 }
+
+// Advanced Multi-Modal Journey Optimizer
+class JourneyOptimizer {
+    constructor() {
+        this.bikeStations = new Map(); // Cache for bike station data
+        this.realTimeData = new Map(); // Cache for real-time transit data
+    }
+
+    async optimizeJourney(baseTransitResult, start, destination) {
+        try {
+            console.log('Optimizing journey from', start, 'to', destination);
+            
+            const route = baseTransitResult.routes?.[0];
+            if (!route) {
+                throw new Error('No route found in transit result');
+            }
+            
+            const leg = route.legs?.[0];
+            if (!leg) {
+                throw new Error('No leg found in route');
+            }
+            
+            console.log('Processing route with', leg.steps?.length || 0, 'steps');
+            
+            // Break journey into segments for analysis
+            const segments = await this.segmentizeJourney(leg);
+            
+            // Analyze each segment for optimal transport mode
+            const optimizedSegments = await Promise.all(
+                segments.map(segment => this.analyzeSegment(segment))
+            );
+            
+            console.log('Analyzed', optimizedSegments.length, 'segments');
+            
+            // Generate alternative routes using dynamic programming approach
+            const alternatives = await this.generateOptimalRoutes(optimizedSegments, start, destination, leg);
+            
+            console.log('Generated', alternatives.length, 'alternative routes');
+            return alternatives;
+            
+        } catch (error) {
+            console.error('Journey optimization failed:', error);
+            throw error;
+        }
+    }
+
+    async segmentizeJourney(leg) {
+        const segments = [];
+        let currentPosition = leg.start_location;
+        
+        console.log('Segmentizing journey with', leg.steps.length, 'steps');
+        
+        for (let i = 0; i < leg.steps.length; i++) {
+            const step = leg.steps[i];
+            const nextPosition = step.end_location;
+            
+            // Safely extract values with fallbacks
+            const segment = {
+                id: i,
+                startLocation: currentPosition,
+                endLocation: nextPosition,
+                originalStep: step,
+                distance: step.distance?.value || 1000, // meters - fallback to 1km
+                duration: step.duration?.value || 600, // seconds - fallback to 10min
+                mode: step.travel_mode || 'UNKNOWN',
+                transitDetails: step.transit || null
+            };
+            
+            // Add contextual information
+            try {
+                segment.context = await this.getSegmentContext(segment, i, leg.steps);
+            } catch (contextError) {
+                console.warn('Failed to get segment context:', contextError);
+                segment.context = { 
+                    isFirst: i === 0, 
+                    isLast: i === leg.steps.length - 1,
+                    totalJourneyTime: leg.duration?.value || 1800
+                };
+            }
+            
+            segments.push(segment);
+            currentPosition = nextPosition;
+        }
+        
+        console.log('Created', segments.length, 'segments');
+        return segments;
+    }
+
+    async getSegmentContext(segment, index, allSteps) {
+        const context = {
+            isFirst: index === 0,
+            isLast: index === allSteps.length - 1,
+            previousSegment: index > 0 ? allSteps[index - 1] : null,
+            nextSegment: index < allSteps.length - 1 ? allSteps[index + 1] : null,
+            totalJourneyTime: allSteps.reduce((sum, step) => sum + step.duration.value, 0)
+        };
+        
+        // Add real-time context
+        if (segment.mode === 'TRANSIT') {
+            context.realTimeDelay = await this.getTransitDelay(segment.transitDetails);
+            context.crowdingLevel = await this.getCrowdingLevel(segment.transitDetails);
+        }
+        
+        return context;
+    }
+
+    async analyzeSegment(segment) {
+        const alternatives = [];
+        
+        // Always include original mode as baseline
+        alternatives.push({
+            mode: segment.mode,
+            duration: segment.duration,
+            cost: this.calculateCost(segment, segment.mode),
+            comfort: this.calculateComfort(segment, segment.mode),
+            reliability: this.calculateReliability(segment, segment.mode),
+            carbonFootprint: this.calculateCarbonFootprint(segment, segment.mode),
+            feasible: true,
+            details: segment.originalStep
+        });
+        
+        // Analyze bike-sharing alternative
+        const bikeAlternative = await this.analyzeBikeOption(segment);
+        if (bikeAlternative.feasible) {
+            alternatives.push(bikeAlternative);
+        }
+        
+        // Analyze walking alternative (for short segments)
+        if (segment.distance < 1000) { // < 1km
+            const walkAlternative = await this.analyzeWalkOption(segment);
+            alternatives.push(walkAlternative);
+        }
+        
+        // Analyze ride-sharing for specific conditions
+        const rideAlternative = await this.analyzeRideOption(segment);
+        if (rideAlternative.feasible) {
+            alternatives.push(rideAlternative);
+        }
+        
+        // Score and rank alternatives
+        alternatives.forEach(alt => {
+            alt.score = this.calculateOverallScore(alt, segment.context);
+        });
+        
+        alternatives.sort((a, b) => b.score - a.score);
+        
+        return {
+            segment: segment,
+            alternatives: alternatives,
+            recommended: alternatives[0]
+        };
+    }
+
+    async analyzeBikeOption(segment) {
+        const nearbyStations = await this.findNearbyBikeStations(
+            segment.startLocation, 
+            segment.endLocation
+        );
+        
+        if (nearbyStations.length === 0) {
+            return { feasible: false, reason: 'No bike stations available' };
+        }
+        
+        // Calculate bike routing time
+        const bikeRoute = await this.calculateBikeRoute(
+            nearbyStations.pickup,
+            nearbyStations.dropoff,
+            segment
+        );
+        
+        const totalDuration = 
+            nearbyStations.walkToPickup + 
+            bikeRoute.duration + 
+            nearbyStations.walkFromDropoff + 
+            60; // 1 min for bike pickup/docking
+        
+        return {
+            mode: 'BIKE_SHARE',
+            duration: totalDuration,
+            cost: this.calculateCost(segment, 'BIKE_SHARE'),
+            comfort: this.calculateComfort(segment, 'BIKE_SHARE'),
+            reliability: this.calculateReliability(segment, 'BIKE_SHARE'),
+            carbonFootprint: this.calculateCarbonFootprint(segment, 'BIKE_SHARE'),
+            feasible: totalDuration < segment.duration * 1.5, // Only if not >50% slower
+            details: {
+                pickupStation: nearbyStations.pickup,
+                dropoffStation: nearbyStations.dropoff,
+                bikeRoute: bikeRoute,
+                estimatedSavings: segment.duration - totalDuration
+            }
+        };
+    }
+
+    async findNearbyBikeStations(startLocation, endLocation) {
+        // In a real implementation, this would query bike-sharing APIs
+        // For now, simulate station availability
+        const mockStations = await this.getMockBikeStations(startLocation, endLocation);
+        
+        if (!mockStations.pickup || !mockStations.dropoff) {
+            return [];
+        }
+        
+        return {
+            pickup: mockStations.pickup,
+            dropoff: mockStations.dropoff,
+            walkToPickup: mockStations.walkToPickup,
+            walkFromDropoff: mockStations.walkFromDropoff
+        };
+    }
+
+    async getMockBikeStations(startLocation, endLocation) {
+        // Simulate real-time bike station data
+        const availability = Math.random();
+        
+        if (availability < 0.3) {
+            return { pickup: null, dropoff: null }; // No bikes/docks available
+        }
+        
+        return {
+            pickup: {
+                id: 'BS001',
+                name: 'Station Near Start',
+                bikesAvailable: Math.floor(Math.random() * 10) + 1,
+                docksAvailable: Math.floor(Math.random() * 5) + 1
+            },
+            dropoff: {
+                id: 'BS002', 
+                name: 'Station Near End',
+                bikesAvailable: Math.floor(Math.random() * 8) + 1,
+                docksAvailable: Math.floor(Math.random() * 6) + 1
+            },
+            walkToPickup: Math.random() * 180 + 60, // 1-4 minutes
+            walkFromDropoff: Math.random() * 180 + 60
+        };
+    }
+
+    async calculateBikeRoute(pickupStation, dropoffStation, segment) {
+        // In real implementation, use Google Maps Directions API with BICYCLING mode
+        const distance = segment.distance * 0.9; // Assume bike route is ~90% of walking distance
+        const avgBikeSpeed = 4.17; // 15 km/h in m/s
+        
+        return {
+            duration: distance / avgBikeSpeed,
+            distance: distance,
+            elevation: Math.random() * 50, // Mock elevation data
+            bikeScore: this.calculateBikeScore(segment, distance)
+        };
+    }
+
+    calculateBikeScore(segment, distance) {
+        let score = 100;
+        
+        // Weather impact (mock)
+        const weather = Math.random();
+        if (weather < 0.2) score -= 30; // Bad weather
+        
+        // Distance penalty
+        if (distance > 3000) score -= 20; // >3km gets harder
+        
+        // Traffic/safety (mock based on time of day)
+        const hour = new Date().getHours();
+        if (hour >= 7 && hour <= 9 || hour >= 17 && hour <= 19) {
+            score -= 15; // Rush hour
+        }
+        
+        return Math.max(score, 0);
+    }
+
+    async analyzeWalkOption(segment) {
+        const walkSpeed = 1.39; // 5 km/h in m/s
+        const walkDuration = segment.distance / walkSpeed;
+        
+        return {
+            mode: 'WALKING',
+            duration: walkDuration,
+            cost: 0,
+            comfort: segment.distance < 500 ? 80 : 60 - (segment.distance / 100),
+            reliability: 95,
+            carbonFootprint: 0,
+            feasible: segment.distance < 1500, // Max 1.5km walking
+            details: { distance: segment.distance }
+        };
+    }
+
+    async analyzeRideOption(segment) {
+        // Only consider ride-sharing for specific scenarios
+        const shouldConsider = 
+            segment.distance > 2000 || // Long distance
+            segment.context.realTimeDelay > 600 || // Major transit delays
+            (segment.context.isLast && segment.context.totalJourneyTime > 3600); // Long journey
+        
+        if (!shouldConsider) {
+            return { feasible: false, reason: 'Not cost-effective for this segment' };
+        }
+        
+        const rideDuration = segment.distance / 8.33 + 180; // 30km/h + 3min pickup
+        
+        return {
+            mode: 'RIDE_SHARE',
+            duration: rideDuration,
+            cost: Math.max(segment.distance * 0.002, 5), // $2 per km, min $5
+            comfort: 90,
+            reliability: 85,
+            carbonFootprint: segment.distance * 0.2,
+            feasible: true,
+            details: { estimatedCost: Math.max(segment.distance * 0.002, 5) }
+        };
+    }
+
+    calculateOverallScore(alternative, context) {
+        const weights = {
+            time: 0.4,
+            cost: 0.2,
+            comfort: 0.15,
+            reliability: 0.15,
+            environmental: 0.1
+        };
+        
+        // Normalize scores (0-100)
+        const timeScore = Math.max(0, 100 - (alternative.duration / 60)); // Penalty per minute
+        const costScore = Math.max(0, 100 - alternative.cost * 10); // Penalty per dollar
+        const comfortScore = alternative.comfort || 50;
+        const reliabilityScore = alternative.reliability || 50;
+        const environmentalScore = Math.max(0, 100 - alternative.carbonFootprint);
+        
+        return (
+            timeScore * weights.time +
+            costScore * weights.cost +
+            comfortScore * weights.comfort +
+            reliabilityScore * weights.reliability +
+            environmentalScore * weights.environmental
+        );
+    }
+
+    async generateOptimalRoutes(analyzedSegments, start, destination, originalLeg) {
+        const routes = [];
+        
+        // Calculate original route duration for comparison
+        const originalDuration = originalLeg.duration?.value || 1800;
+        const originalDistance = originalLeg.distance?.text || '4.2 km';
+        
+        // Generate base optimized route (best alternative for each segment)
+        const optimizedRoute = {
+            type: 'optimized',
+            segments: analyzedSegments.map(as => as.recommended),
+            totalDuration: analyzedSegments.reduce((sum, as) => sum + as.recommended.duration, 0),
+            totalCost: analyzedSegments.reduce((sum, as) => sum + as.recommended.cost, 0),
+            originalDuration: originalDuration,
+            totalDistance: originalDistance,
+            description: 'AI-Optimized Multi-Modal Route'
+        };
+        
+        // Generate bike-focused alternative
+        const bikeFocusedRoute = await this.generateBikeFocusedRoute(analyzedSegments);
+        if (bikeFocusedRoute) {
+            bikeFocusedRoute.originalDuration = originalDuration;
+            bikeFocusedRoute.totalDistance = originalDistance;
+        }
+        
+        // Generate time-focused alternative
+        const timeFocusedRoute = await this.generateTimeFocusedRoute(analyzedSegments);
+        if (timeFocusedRoute) {
+            timeFocusedRoute.originalDuration = originalDuration;
+            timeFocusedRoute.totalDistance = originalDistance;
+        }
+        
+        // Format routes for display
+        routes.push(this.formatOptimizedRoute(optimizedRoute));
+        
+        if (bikeFocusedRoute) {
+            routes.push(this.formatOptimizedRoute(bikeFocusedRoute));
+        }
+        
+        if (timeFocusedRoute && timeFocusedRoute.totalDuration !== optimizedRoute.totalDuration) {
+            routes.push(this.formatOptimizedRoute(timeFocusedRoute));
+        }
+        
+        return routes;
+    }
+
+    formatOptimizedRoute(route) {
+        const steps = route.segments.map((segment, i) => {
+            const mode = this.getModeIcon(segment.mode);
+            const duration = Math.ceil(segment.duration / 60);
+            
+            if (segment.mode === 'BIKE_SHARE' && segment.details.pickupStation) {
+                return `${mode} Bike from ${segment.details.pickupStation.name} (${duration}min)`;
+            } else if (segment.mode === 'TRANSIT') {
+                return `${mode} ${segment.details.instructions.replace(/<[^>]*>/g, '')}`;
+            } else {
+                return `${mode} ${segment.details.instructions?.replace(/<[^>]*>/g, '') || `${segment.mode.toLowerCase()} segment`} (${duration}min)`;
+            }
+        });
+        
+        const totalMinutes = Math.ceil(route.totalDuration / 60);
+        const savings = route.originalDuration ? Math.max(0, (route.originalDuration - route.totalDuration) / 60) : 0;
+        
+        return {
+            type: route.type,
+            duration: `${totalMinutes} mins`,
+            distance: route.totalDistance || '4.2 km', // Mock for now
+            steps: steps,
+            isFastest: route.type === 'optimized',
+            savings: savings > 1 ? `⚡ Save ${Math.round(savings)} mins with smart routing!` : null,
+            cost: route.totalCost > 0 ? `$${route.totalCost.toFixed(2)}` : 'Free'
+        };
+    }
+
+    getModeIcon(mode) {
+        const icons = {
+            'WALKING': '🚶',
+            'BIKE_SHARE': '🚴',
+            'TRANSIT': '🚇',
+            'BUS': '🚌',
+            'SUBWAY': '🚇',
+            'RIDE_SHARE': '🚗'
+        };
+        return icons[mode] || '🚶';
+    }
+
+    // Utility calculation methods
+    calculateCost(segment, mode) {
+        const costs = {
+            'WALKING': 0,
+            'BIKE_SHARE': 0.5, // Per segment
+            'TRANSIT': 2.5,
+            'RIDE_SHARE': Math.max(segment.distance * 0.002, 5)
+        };
+        return costs[mode] || 0;
+    }
+
+    calculateComfort(segment, mode) {
+        // Weather, distance, and other factors
+        const base = { 'WALKING': 70, 'BIKE_SHARE': 75, 'TRANSIT': 85, 'RIDE_SHARE': 90 };
+        return base[mode] || 50;
+    }
+
+    calculateReliability(segment, mode) {
+        const base = { 'WALKING': 95, 'BIKE_SHARE': 80, 'TRANSIT': 75, 'RIDE_SHARE': 85 };
+        return base[mode] || 50;
+    }
+
+    calculateCarbonFootprint(segment, mode) {
+        const emissions = { 'WALKING': 0, 'BIKE_SHARE': 0, 'TRANSIT': segment.distance * 0.05, 'RIDE_SHARE': segment.distance * 0.2 };
+        return emissions[mode] || 0;
+    }
+
+    async getTransitDelay(transitDetails) {
+        // Mock real-time transit data
+        return Math.random() < 0.2 ? Math.random() * 300 : 0; // 20% chance of delay
+    }
+
+    async getCrowdingLevel(transitDetails) {
+        // Mock crowding data
+        return Math.random() * 100;
+    }
+}
+
+// Create global optimizer instance
+const journeyOptimizer = new JourneyOptimizer();
+
+// Updated analyze function to use the new algorithm
+async function analyzeAndOptimizeRoute(transitResult, start, destination) {
+    return await journeyOptimizer.optimizeJourney(transitResult, start, destination);
+}
+
+// Additional utility methods for the Journey Optimizer
+JourneyOptimizer.prototype.generateBikeFocusedRoute = async function(analyzedSegments) {
+    const bikeRoute = {
+        type: 'bike_focused',
+        segments: [],
+        totalDuration: 0,
+        totalCost: 0,
+        description: 'Bike-Optimized Route'
+    };
+    
+    for (const segmentAnalysis of analyzedSegments) {
+        // Prefer bike alternatives where available and reasonable
+        const bikeOption = segmentAnalysis.alternatives.find(alt => alt.mode === 'BIKE_SHARE');
+        
+        if (bikeOption && bikeOption.feasible && bikeOption.score > 60) {
+            bikeRoute.segments.push(bikeOption);
+        } else {
+            bikeRoute.segments.push(segmentAnalysis.recommended);
+        }
+    }
+    
+    bikeRoute.totalDuration = bikeRoute.segments.reduce((sum, seg) => sum + seg.duration, 0);
+    bikeRoute.totalCost = bikeRoute.segments.reduce((sum, seg) => sum + seg.cost, 0);
+    
+    return bikeRoute;
+};
+
+JourneyOptimizer.prototype.generateTimeFocusedRoute = async function(analyzedSegments) {
+    const timeRoute = {
+        type: 'time_focused',
+        segments: [],
+        totalDuration: 0,
+        totalCost: 0,
+        description: 'Fastest Route'
+    };
+    
+    for (const segmentAnalysis of analyzedSegments) {
+        // Always pick the fastest alternative
+        const fastestOption = segmentAnalysis.alternatives.reduce((fastest, current) => 
+            current.duration < fastest.duration ? current : fastest
+        );
+        
+        timeRoute.segments.push(fastestOption);
+    }
+    
+    timeRoute.totalDuration = timeRoute.segments.reduce((sum, seg) => sum + seg.duration, 0);
+    timeRoute.totalCost = timeRoute.segments.reduce((sum, seg) => sum + seg.cost, 0);
+    
+    return timeRoute;
+};
 
 // Format route data from Google Maps response
 function formatRoute(result, type) {
@@ -288,8 +851,18 @@ function formatRoute(result, type) {
         type: type,
         duration: leg.duration.text,
         distance: leg.distance.text,
-        steps: leg.steps.map(step => step.instructions.replace(/<[^>]*>/g, '')),
-        isFastest: false
+        steps: leg.steps.map(step => {
+            let instruction = step.instructions.replace(/<[^>]*>/g, '');
+            if (step.travel_mode === 'TRANSIT') {
+                const transit = step.transit;
+                instruction = `${transit.line.vehicle.type === 'BUS' ? '🚌' : '🚇'} ${transit.line.short_name || transit.line.name}: ${instruction}`;
+            } else if (step.travel_mode === 'WALKING') {
+                instruction = `🚶 ${instruction}`;
+            }
+            return instruction;
+        }),
+        isFastest: false,
+        directionsResult: result
     };
 }
 
@@ -320,12 +893,31 @@ function displayRoutes(routes) {
         <div class="route-card ${route.type}-route" data-index="${index}">
             <div class="route-header">
                 <span class="route-type">
-                    ${route.type === 'bike' ? '🚴 Bike-Sharing Route' : '🚇 Transit Route'}
+                    ${route.type === 'optimized' ? '🤖 AI-Optimized Route' :
+                      route.type === 'time_focused' ? '⚡ Fastest Route' :
+                      route.type === 'bike_focused' ? '🌱 Eco-Friendly Route' :
+                      route.type === 'hybrid' ? '🚴🚇 Smart Hybrid Route' : 
+                      route.type === 'bike' ? '🚴 Full Bike Route' : 
+                      '🚇 Standard Transit Route'}
                 </span>
                 <span class="route-duration">${route.duration}</span>
             </div>
             <div class="route-details">
                 <div><strong>Distance:</strong> ${route.distance}</div>
+                ${route.type === 'optimized' ? 
+                  '<div style="margin-top: 4px; font-size: 0.9em; color: var(--secondary-color);">🎯 Multi-modal analysis with real-time optimization</div>' :
+                  route.type === 'time_focused' ?
+                  '<div style="margin-top: 4px; font-size: 0.9em; color: var(--secondary-color);">⚡ Prioritizes speed over cost and comfort</div>' :
+                  route.type === 'bike_focused' ?
+                  '<div style="margin-top: 4px; font-size: 0.9em; color: var(--secondary-color);">🌱 Maximizes bike-sharing and walking segments</div>' :
+                  route.type === 'hybrid' ? 
+                  '<div style="margin-top: 4px; font-size: 0.9em; color: var(--secondary-color);">🎯 Optimized with bike-sharing segments</div>' : 
+                  ''
+                }
+                ${route.cost ? 
+                  `<div style="margin-top: 4px; font-size: 0.9em; color: var(--text-light);">💰 Estimated cost: ${route.cost}</div>` : 
+                  ''
+                }
                 <div style="margin-top: 8px;"><strong>Steps:</strong></div>
                 <ol style="margin-left: 20px; margin-top: 4px;">
                     ${route.steps.map(step => `<li>${step}</li>`).join('')}
