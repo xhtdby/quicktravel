@@ -306,8 +306,8 @@ function displayRoutes(routes) {
     });
     
     if (routes.length > 1) {
-        // Simple comparison based on duration (assumes format like "25 mins")
-        const durations = routes.map(r => parseInt(r.duration));
+        // Use parseRouteTime for consistent duration parsing
+        const durations = routes.map(r => parseRouteTime(r.duration));
         const minDuration = Math.min(...durations);
         const fastestIndex = durations.indexOf(minDuration);
         routes[fastestIndex].isFastest = true;
