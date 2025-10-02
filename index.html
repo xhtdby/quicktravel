@@ -1,86 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="QuickTravel">
-    <meta name="theme-color" content="#2196F3">
-    <meta name="description" content="Find faster bike-sharing routes for your travel">
-    
-    <title>QuickTravel - Smart Bike Route Finder</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="icons/icon-192x192.svg">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.svg">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.svg">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="icons/icon-192x192.svg">
-    
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b3d91">
+  <title>QuickTravel</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192x192.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <!-- Header -->
-        <header>
-            <h1>🚴 QuickTravel</h1>
-            <p class="tagline">Find faster bike-sharing routes</p>
-        </header>
+  <main class="app-shell">
+    <header class="app-header">
+      <h1>QuickTravel</h1>
+      <p class="tagline">Bike-share + express rail routing without legacy labels</p>
+    </header>
 
-        <!-- Main Content -->
-        <main>
-            <!-- Route Input Section -->
-            <section class="route-input">
-                <div class="input-group">
-                    <label for="start">📍 Starting Point</label>
-                    <input type="text" id="start" placeholder="Enter start location">
-                </div>
-                
-                <div class="input-group">
-                    <label for="destination">🎯 Destination</label>
-                    <input type="text" id="destination" placeholder="Enter destination">
-                </div>
-                
-                <button id="findRoute" class="btn-primary">Find Best Route</button>
-            </section>
+    <form id="routeForm" class="route-form">
+      <div class="field">
+        <label for="from">From</label>
+        <input id="from" name="from" required placeholder="Start e.g. Don Gratton House">
+      </div>
+      <div class="field">
+        <label for="to">To</label>
+        <input id="to" name="to" required placeholder="Destination e.g. Paddington">
+      </div>
+      <button id="submitRoute" type="submit" class="btn-primary">Find routes</button>
+    </form>
 
-            <!-- Route Options -->
-            <section class="route-options">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="includeBikeSharing" checked>
-                    <span>Include bike-sharing stations</span>
-                </label>
-            </section>
+    <section id="error" class="error-panel hidden" role="alert"></section>
+    <section id="results" class="results"></section>
+  </main>
 
-            <!-- Results Section -->
-            <section id="results" class="results hidden">
-                <h2>Route Options</h2>
-                <div id="routesList"></div>
-            </section>
-
-            <!-- Map Container -->
-            <div id="map"></div>
-
-            <!-- Status Messages -->
-            <div id="status" class="status hidden"></div>
-        </main>
-
-        <!-- Footer -->
-        <footer>
-            <p>QuickTravel PWA v1.0</p>
-            <div id="installPrompt" class="install-prompt hidden">
-                <button id="installBtn">📱 Add to Home Screen</button>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Scripts -->
-    <script src="app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

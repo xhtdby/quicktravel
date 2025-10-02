@@ -1,211 +1,296 @@
-# QuickTravel 🚴
+# QuickTravel 🚴‍♂️
 
-A Progressive Web App (PWA) that helps you find faster bike-sharing routes for your daily travel. QuickTravel compares traditional transit routes with bike-sharing options to help you save time and get to your destination faster.
+**Smart Multi-Modal Route Finder PWA**
 
-## Features
-
-✨ **Smart Route Comparison** - Compare transit routes with bike-sharing alternatives
-🗺️ **Google Maps Integration** - Real-time routing with Google Maps API
-📱 **Progressive Web App** - Install on your iPhone home screen like a native app
-🚴 **Bike-Sharing Optimized** - Find the fastest bike-sharing routes
-⚡ **Offline Support** - Works even without internet connection (via service worker)
-📍 **Location-Based** - Uses your current location for easy route planning
-🎨 **Mobile-First Design** - Optimized for iPhone and mobile devices
-
-## iPhone Installation Instructions
-
-### How to Add QuickTravel to Your iPhone Home Screen
-
-1. **Open in Safari**
-   - Open Safari browser on your iPhone
-   - Navigate to the QuickTravel web app URL
-
-2. **Open Share Menu**
-   - Tap the Share button (square with arrow pointing up) at the bottom of Safari
-   
-3. **Add to Home Screen**
-   - Scroll down and tap "Add to Home Screen"
-   - You'll see the QuickTravel icon and name
-   
-4. **Confirm Installation**
-   - Tap "Add" in the top right corner
-   - QuickTravel will now appear on your home screen!
-
-5. **Launch the App**
-   - Tap the QuickTravel icon on your home screen
-   - The app will open in full-screen mode like a native app
-   - No browser UI will be visible!
-
-### iPhone PWA Features
-
-When installed on iPhone, QuickTravel provides:
-- ✅ Full-screen experience (no Safari UI)
-- ✅ App icon on home screen
-- ✅ Splash screen on launch
-- ✅ Offline functionality
-- ✅ Fast loading times
-- ✅ Push notifications (if enabled)
-
-## Quick Start
-
-### Using the App
-
-1. **Enter Locations**
-   - Enter your starting point in the "Starting Point" field
-   - Enter your destination in the "Destination" field
-
-2. **Find Routes**
-   - Tap "Find Best Route" button
-   - The app will search for both transit and bike-sharing routes
-
-3. **Compare Options**
-   - View multiple route options
-   - See duration, distance, and step-by-step directions
-   - Routes marked with ⚡ FASTEST badge are the quickest options
-
-4. **Select a Route**
-   - Tap on any route card to see it highlighted on the map
-   - Follow the step-by-step directions
-
-### Demo Mode
-
-The app includes a demo mode that works without a Google Maps API key:
-- Shows sample routes for any location
-- Demonstrates the UI and functionality
-- Perfect for testing the PWA features
-
-## Development
-
-### Prerequisites
-
-- A modern web browser (Chrome, Safari, Edge)
-- A web server (for local testing)
-- Google Maps API key (optional, for real routing)
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/xhtdby/quicktravel.git
-   cd quicktravel
-   ```
-
-2. **Serve the app locally**
-   ```bash
-   # Using Python 3
-   python3 -m http.server 8000
-   
-   # OR using Node.js http-server
-   npx http-server -p 8000
-   
-   # OR using PHP
-   php -S localhost:8000
-   ```
-
-3. **Open in browser**
-   - Navigate to `http://localhost:8000`
-   - The app should load and work in demo mode
-
-### Adding Google Maps API Key
-
-To use real routing instead of demo data:
-
-1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable these APIs:
-   - Maps JavaScript API
-   - Directions API
-   - Places API
-   - Geocoding API
-
-3. Open `app.js` and replace the API key:
-   ```javascript
-   const apiKey = 'YOUR_ACTUAL_API_KEY_HERE';
-   ```
-
-### Project Structure
-
-```
-quicktravel/
-├── index.html          # Main HTML structure
-├── styles.css          # Styling and responsive design
-├── app.js             # Application logic and Google Maps integration
-├── sw.js              # Service worker for offline support
-├── manifest.json      # PWA manifest for installation
-├── icons/             # App icons for various sizes
-│   ├── icon-*.svg     # Generated SVG icons
-│   └── generate-icons.py  # Icon generator script
-└── README.md          # This file
-```
-
-## Technology Stack
-
-- **HTML5** - Semantic markup and PWA meta tags
-- **CSS3** - Modern styling with CSS Grid and Flexbox
-- **Vanilla JavaScript** - No framework dependencies
-- **Service Workers** - Offline functionality and caching
-- **Google Maps API** - Route calculation and mapping
-- **Web App Manifest** - PWA installation support
-
-## Browser Compatibility
-
-- ✅ Safari (iOS 11.3+) - Full PWA support
-- ✅ Chrome (Desktop & Mobile) - Full PWA support
-- ✅ Edge (Desktop & Mobile) - Full PWA support
-- ✅ Firefox (Desktop & Mobile) - Partial PWA support
-- ✅ Opera (Desktop & Mobile) - Full PWA support
-
-## Features Explained
-
-### Bike-Sharing Route Logic
-
-The app implements smart routing logic that:
-1. Calculates traditional transit routes (bus, subway, train)
-2. Finds bike-sharing routes with walking segments
-3. Compares travel times between options
-4. Highlights the fastest route
-5. Shows time savings when bike-sharing is faster
-
-### Offline Capability
-
-The service worker (`sw.js`) provides:
-- Caching of app shell (HTML, CSS, JS)
-- Offline fallback for basic functionality
-- Background sync for queued actions
-- Automatic updates when new versions are available
-
-### Progressive Enhancement
-
-The app works in multiple modes:
-- **Full Mode** - With Google Maps API key (real routing)
-- **Demo Mode** - Without API key (sample data)
-- **Offline Mode** - Cached content when no internet
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - feel free to use this project for learning and development.
-
-## Future Enhancements
-
-Planned features for future versions:
-- [ ] Real-time bike availability at stations
-- [ ] Weather-aware routing
-- [ ] Saved favorite routes
-- [ ] Multi-city support
-- [ ] Electric scooter integration
-- [ ] Carbon footprint tracking
-- [ ] Social features (share routes)
-
-## Support
-
-For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Check the documentation above
-- Review the code comments for implementation details
+QuickTravel generates intelligent hybrid routes by combining bike-sharing (Santander, Forest, Lime) with public transit. Unlike traditional route planners, we control the route generation logic to create truly optimal multi-modal combinations.
 
 ---
 
-Made with ❤️ for smarter urban mobility
+## ✨ Features
+
+- 🎯 **Intelligent Route Generation** - Creates 3-4 diverse, optimized routes per search
+- 🚴 **Multi-Provider Bikes** - Supports Santander, Forest, and Lime bike-sharing
+- 🚇 **Hybrid Routes** - Bike→Rail→Bike combinations for faster cross-city travel
+- ⚡ **Fast Testing** - Deterministic tests run in <10ms with no network calls
+- 📱 **PWA** - Install on mobile home screen, works offline
+- 🗺️ **London-Ready** - Pre-configured for London transit hubs and bike stations
+- 🧪 **Test-Driven** - CI/CD pipeline ensures quality on every commit
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Run Tests
+
+```bash
+npm test
+```
+
+Output:
+```
+🧪 Running QuickTravel Engine Tests
+
+Test 1: Don Gratton House → Paddington (hybrid route test)
+✅ Passed
+
+Test 2: Liverpool Street → Bank (short distance test)
+✅ Passed
+
+Test 3: Whitechapel → Oxford Circus (cross-city test)
+✅ Passed
+
+Test 4: King's Cross → Victoria (hub-to-hub test)
+✅ Passed
+
+✅ All tests passed (4 suites) in 9ms
+```
+
+### 3. Start Development Server
+
+```bash
+python -m http.server 8000
+```
+
+Visit: http://localhost:8000
+
+### 4. Try It Out
+
+1. Enter origin (e.g., "Whitechapel")
+2. Enter destination (e.g., "Paddington")
+3. View 3-4 diverse routes:
+   - Transit baselines (bus, rail)
+   - Direct bike routes
+   - Hybrid bike+rail routes
+   - Last-mile bike options
+
+---
+
+## 🏗️ Architecture
+
+### New Modular Design
+
+```
+quicktravel/
+├── src/                          # Core routing engine
+│   ├── engine.js                 # Route generation logic
+│   ├── providers.js              # Abstract data provider + mock
+│   ├── fixtures.london.js        # London test data
+│   └── scoring.js                # Pareto optimization
+├── tests/                        # Automated testing
+│   ├── run.js                    # Test runner
+│   └── engine.spec.js            # Test cases
+├── docs/                         # Documentation
+│   ├── ARCHITECTURE.md           # (Old - needs update)
+│   ├── ENGINE.md                 # New engine architecture
+│   ├── GOOGLE_MAPS.md            # API setup
+│   └── TESTING.md                # Testing guide
+├── app.js                        # UI logic (to be updated)
+├── index.html                    # PWA interface
+└── .github/workflows/ci.yml      # CI/CD pipeline
+```
+
+### Key Principle
+
+**We control route generation.** Google Maps provides data (geocoding, transit times, cycling times), but **we decide which hybrid combinations to create**.
+
+See [docs/ENGINE.md](docs/ENGINE.md) for full architecture details.
+
+---
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+npm test              # Fast engine tests (<10ms)
+npm run test:old      # Legacy route validation
+npm run test:browser  # Puppeteer browser tests
+```
+
+### Test Philosophy
+
+- ✅ **Deterministic** - Same input always produces same output
+- ✅ **Fast** - No network calls, runs in milliseconds
+- ✅ **Comprehensive** - Tests all route types and edge cases
+- ✅ **Automated** - CI/CD fails if tests don't pass
+
+### What Tests Validate
+
+1. **Route Count** - Returns ≥3 routes
+2. **Route Diversity** - ≥3 different types (bus, rail, bike, hybrid)
+3. **Time Spread** - Routes vary by 4-10+ minutes
+4. **Hybrid Routes** - At least one bike+transit combo for medium+ distances
+5. **Bike Authenticity** - All "bike" routes actually include bike steps
+
+---
+
+## 🚴 Multi-Provider Bike Support
+
+QuickTravel supports three bike-sharing providers:
+
+| Provider | Type | Cost | Unlock Time | Dock Time |
+|----------|------|------|-------------|-----------|
+| **Santander** | Docked | £1.95 | 1 min | 1 min |
+| **Forest** | Dockless | £1.50 | 0.5 min | 0 min |
+| **Lime** | Dockless | £1.80 | 0.5 min | 0 min |
+
+The engine automatically generates routes using all available providers in the area.
+
+---
+
+## 📊 Route Types Generated
+
+### 1. Transit Baselines
+- `transit_bus` - Bus-optimized route
+- `transit_rail` - Rail-optimized route
+
+### 2. Walk Baseline
+- `walk` - Full walking route (always available)
+
+### 3. Direct Bike Routes
+- `bike_direct_santander` - Walk→Santander bike→walk
+- `bike_direct_forest` - Walk→Forest bike→walk
+- `bike_direct_lime` - Walk→Lime bike→walk
+
+### 4. Hybrid Routes
+- `hybrid_bike_rail_*` - Bike→Hub→Express Rail→Hub→Bike
+- Can mix providers: `hybrid_bike_rail_santander_lime`
+
+### 5. Last-Mile Bike
+- `rail_plus_bike_lastmile_*` - Rail→Bike (final hop)
+
+---
+
+## 🎯 Current Status
+
+### ✅ Completed
+- [x] Modular routing engine with provider abstraction
+- [x] Multi-provider bike support (Santander, Forest, Lime)
+- [x] Pareto optimization (time, cost, transfers, CO₂)
+- [x] Deterministic testing framework
+- [x] CI/CD pipeline with GitHub Actions
+- [x] London fixtures with 13 bike stations
+- [x] Hybrid route generation (bike+rail)
+- [x] All tests passing in <10ms
+
+### 🔄 In Progress
+- [ ] Wire new engine into app.js
+- [ ] Update UI to display new route types
+- [ ] Add provider badges to route cards
+
+### 📋 Next Steps
+1. Update `app.js` to use `generateCandidates()` from `src/engine.js`
+2. Implement `GoogleProvider` for real API calls
+3. Add real-time bike availability APIs
+4. Expand to more cities (NYC, SF, Chicago)
+5. Add user preference controls (fast/cheap/green)
+
+---
+
+## 🔧 Configuration
+
+### Google Maps API Key
+
+API key is configured in `index.html`:
+
+```javascript
+const API_KEY = 'AIzaSyCf9okaNlSNpA2vdNKOVPHUqEUBcZyWTL0';
+```
+
+See [docs/GOOGLE_MAPS.md](docs/GOOGLE_MAPS.md) for setup instructions.
+
+### Adding Cities
+
+Create a new fixtures file:
+
+```javascript
+// src/fixtures.nyc.js
+export const nycFixtures = {
+  geocodes: { /* locations */ },
+  stations: [ /* Citi Bike stations */ ],
+  hubs: [ /* transit hubs */ ],
+  express: [ /* express routes */ ],
+  costs: { bike_citibike: 3.50 },
+  // ...
+};
+```
+
+---
+
+## 📱 PWA Installation
+
+### iPhone
+1. Open Safari
+2. Tap Share button
+3. Select "Add to Home Screen"
+4. Tap "Add"
+
+### Android
+1. Open Chrome
+2. Tap menu (⋮)
+3. Select "Add to Home Screen"
+4. Tap "Add"
+
+---
+
+## 🤝 Contributing
+
+### Running Tests Before Commit
+
+```bash
+npm test
+```
+
+Tests must pass before committing. CI will automatically run tests on push.
+
+### Adding Test Cases
+
+Edit `tests/engine.spec.js`:
+
+```javascript
+results.push(await test_case('Origin','Destination', { 
+  minSpread: 8,        // min time difference
+  requireHybrid: true  // must include hybrid route
+}));
+```
+
+---
+
+## 📚 Documentation
+
+- [ENGINE.md](docs/ENGINE.md) - Routing engine architecture
+- [GOOGLE_MAPS.md](docs/GOOGLE_MAPS.md) - API setup guide
+- [TESTING.md](docs/TESTING.md) - Testing documentation
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System overview (legacy)
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3
+- **Maps**: Google Maps JavaScript API
+- **Testing**: Node.js (no external frameworks)
+- **CI/CD**: GitHub Actions
+- **PWA**: Service Worker, Web Manifest
+
+---
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+---
+
+## 🙏 Credits
+
+Built with ❤️ for smarter urban mobility.
+
+**API Key**: AIzaSyCf9okaNlSNpA2vdNKOVPHUqEUBcZyWTL0  
+**Repository**: xhtdby/quicktravel  
+**Branch**: main

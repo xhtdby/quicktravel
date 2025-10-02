@@ -149,7 +149,7 @@ center: { lat: 35.6762, lng: 139.6503 }, // Tokyo
 
 ### Customize Route Options
 
-Modify travel modes in the `findRoutesWithGoogleMaps` function:
+Modify travel modes in the legacy map integration helper function:
 
 **Current Options:**
 ```javascript
@@ -355,3 +355,4 @@ If you encounter issues:
 ---
 
 **Note:** QuickTravel works perfectly in demo mode without Google Maps. Only add the API key if you need real routing for production use.
+

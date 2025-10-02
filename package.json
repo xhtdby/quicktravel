@@ -1,0 +1,18 @@
+{
+  "name": "quicktravel",
+  "version": "1.0.0",
+  "description": "Smart bike-sharing route finder PWA",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.js",
+    "test:old": "node tests/validate-routes.js",
+    "test:browser": "node tests/test-runner.js",
+    "test:watch": "node tests/test-runner.js --watch",
+    "validate": "node tests/validate-routes.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {}
+}

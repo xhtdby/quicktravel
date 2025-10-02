@@ -1,107 +1,47 @@
-// Service Worker for QuickTravel PWA
-const CACHE_NAME = 'quicktravel-v1.0.0';
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/manifest.json'
+const CACHE_NAME = 'qt-v6';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/app.js',
+  '/src/engine.js',
+  '/src/providers.js',
+  '/src/fixtures.london.js',
+  '/src/scoring.js',
+  '/src/adapters/tflBikePoint.js',
+  '/src/adapters/tflArrivals.js',
+  '/src/adapters/docklessGbfs.js',
+  '/src/adapters/googleGeocoder.js'
 ];
 
-// Install event - cache resources
 self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing...');
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[Service Worker] Caching app shell');
-                return cache.addAll(urlsToCache);
-            })
-            .catch((error) => {
-                console.error('[Service Worker] Cache failed:', error);
-            })
-    );
-    // Activate worker immediately
-    self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating...');
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-    // Take control of all pages immediately
-    return self.clients.claim();
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    )).then(() => self.clients.claim())
+  );
 });
 
-// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
-    // Skip cross-origin requests
-    if (!event.request.url.startsWith(self.location.origin)) {
-        return;
-    }
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
 
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
-
-                // Clone the request
-                const fetchRequest = event.request.clone();
-
-                return fetch(fetchRequest).then((response) => {
-                    // Check if valid response
-                    if (!response || !response.ok) {
-                        return response;
-                    }
-
-                    // Clone the response
-                    const responseToCache = response.clone();
-
-                    // Cache the fetched response for future use
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-
-                    return response;
-                });
-            })
-            .catch((error) => {
-                console.error('[Service Worker] Fetch failed:', error);
-                // Could return a custom offline page here
-            })
-    );
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      });
+    })
+  );
 });
-
-// Listen for messages from the client
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-});
-
-// Background sync for offline requests (if supported)
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'sync-routes') {
-        event.waitUntil(syncRoutes());
-    }
-});
-
-async function syncRoutes() {
-    // Placeholder for syncing offline route requests
-    console.log('[Service Worker] Syncing routes...');
-}
